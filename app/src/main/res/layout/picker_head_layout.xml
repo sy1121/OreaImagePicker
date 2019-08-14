@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/header_panel"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/picker_header_height"
+    android:layout_alignParentTop="true"
+    android:background="@color/ip_color_primary">
+    <ImageView
+        android:id="@+id/back_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="10dp"
+        android:src="@drawable/ic_arrow_back"/>
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@id/back_icon"
+        android:layout_marginLeft="10dp"
+        android:textSize="18sp"
+        android:textColor="#ffffff"
+        android:text="图片"/>
+
+
+    <TextView
+        android:id="@+id/send_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="15dp"
+        android:textColor="@color/color_mogreen"
+        android:textSize="15sp"
+        android:text="发送"
+        android:enabled="false"/>
+
+</RelativeLayout>
+

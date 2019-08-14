@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layout_image_crop_page"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    >
+    <com.crgt.ilife.plugin.album.fg.view.ClipImageLayout
+        android:id="@+id/layout_image_crop_page_cil"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.0"
+        />
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="85dp"
+        android:background="@color/c_2E000000"
+        >
+
+        <TextView
+            android:id="@+id/layout_image_crop_page_tv_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="取消"
+            android:textColor="@color/c_white"
+            android:textSize="17sp"
+            android:layout_marginLeft="35dp"
+            android:layout_centerVertical="true"
+            />
+
+        <TextView
+            android:id="@+id/layout_image_crop_page_tv_ensure"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="确定"
+            android:textColor="@color/c_white"
+            android:textSize="17sp"
+            android:layout_marginRight="35dp"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            />
+
+
+    </RelativeLayout>
+
+
+
+
+
+</LinearLayout>
