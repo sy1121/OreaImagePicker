@@ -1,24 +1,24 @@
 package com.example.yishe.oreaimagepicker.ui;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,12 +26,14 @@ import android.widget.Toast;
 import com.example.yishe.oreaimagepicker.R;
 import com.example.yishe.oreaimagepicker.adapter.ImageFolderListAdapter;
 import com.example.yishe.oreaimagepicker.adapter.ImageSelectAdapter;
+import com.example.yishe.oreaimagepicker.entity.ImageItem;
 import com.example.yishe.oreaimagepicker.model.ImagePickModel;
 import com.example.yishe.oreaimagepicker.util.Utils;
 import com.example.yishe.oreaimagepicker.widget.FolderPopupWindow;
 import com.example.yishe.oreaimagepicker.widget.GridSpacingItemDecoration;
 
-import java.security.Permission;
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -61,6 +63,8 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
 
     private static final int MSG_LOAD_FINISHED = 0x01;
     private static final int PERMISSION_STORAGE_CODE = 0x10;
+    private static final int PERMISSION_CAMERA_CODE  = 0x11;
+    private static final int REQUEST_CODE_TAKE_PICTURE = 0x100;
     private ImageSelectAdapter mGridAdapter;
     private ImageFolderListAdapter mAlbumAdapter;
 
@@ -76,6 +80,9 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     };
+
+    private ImagePickModel model;
+    private List<ImageItem> images;
 
 
 
@@ -93,6 +100,32 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        ImagePickModel.getInstance().onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        ImagePickModel.getInstance().onRestoreInstanceState(savedInstanceState);
+        super.onRestoreInstanceState(savedInstanceState);
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG,"onResume");
+        model = ImagePickModel.getInstance();
+        Log.i(TAG,"albums = " + ImagePickModel.getInstance().getmAlbums());
+    }
+
     private void initView(){
         back_btn.setOnClickListener(this);
         send_tv.setOnClickListener(this);
@@ -104,6 +137,45 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
         image_grid_rv.setLayoutManager(new GridLayoutManager(this, 3));
         image_grid_rv.addItemDecoration(new GridSpacingItemDecoration(3, Utils.dpToPx(2), true));
         image_grid_rv.setAdapter(mGridAdapter);
+
+        mGridAdapter.setCameraClickListener(new ImageSelectAdapter.OnCameraClickListener() {
+            @Override
+            public void onCameraClick() {
+                if(checkPermission(Manifest.permission.CAMERA)) {
+                    ImagePickModel.getInstance().takePicture(GridActivity.this, REQUEST_CODE_TAKE_PICTURE);
+                }else{
+                    ActivityCompat.requestPermissions(GridActivity.this,new String[]{Manifest.permission.CAMERA},PERMISSION_CAMERA_CODE);
+                }
+            }
+        });
+
+        mGridAdapter.setItemClickListener(new ImageSelectAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(int pos) {
+                if (ImagePickModel.getInstance().isMultiMode()) {
+                    //预览
+
+                }else{
+                    Intent intent = new Intent();
+                    Bundle bundle = new Bundle();
+                    ArrayList<ImageItem> selectedImages = new ArrayList<>();
+                    selectedImages.add(ImagePickModel.getInstance().getmAlbums().get(
+                            ImagePickModel.getInstance().getmCurSelectedAlbumIndex()
+                    ).items.get(pos));
+                    bundle.putParcelableArrayList("images",selectedImages);
+                    intent.putExtra("bundle",bundle);
+                    setResult(Activity.RESULT_OK,intent);
+                    finish();
+                }
+            }
+        });
+
+        mGridAdapter.setPicCheckChangeListener(new ImageSelectAdapter.OnPicCheckChangeListener() {
+            @Override
+            public void onChange() {
+                if(!ImagePickModel.getInstance().isMultiMode()) return;
+            }
+        });
 
     }
 
@@ -145,6 +217,7 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Log.i(TAG,"requestCode : " + requestCode + ", permissions[0] : " + permissions[0] + " grantResults[0] : " + grantResults[0]);
         switch (requestCode){
             case PERMISSION_STORAGE_CODE:
                 if(grantResults[0] == PackageManager.PERMISSION_GRANTED){
@@ -153,10 +226,26 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
                     showToast("权限被禁止，无法选择本地图片");
                 }
                 break;
+            case PERMISSION_CAMERA_CODE:
+                if(grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                    ImagePickModel.getInstance().takePicture(GridActivity.this,REQUEST_CODE_TAKE_PICTURE);
+                }else{
+                    showToast("权限被禁止，无法进行拍照");
+                }
+                break;
         }
+
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        switch (requestCode){
+            case REQUEST_CODE_TAKE_PICTURE:
+                Log.i(TAG,"take picture return ");
 
+                break;
+        }
+    }
 
     @Override
     public void onClick(View v) {
@@ -189,17 +278,17 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
         mPopupWindow.setOnItemClickListener(new FolderPopupWindow.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-              /*  mImageFolderAdapter.setSelectIndex(position);
-                imagePicker.setCurrentImageFolderPosition(position);
-                mFolderPopupWindow.dismiss();
-                ImageFolder imageFolder = (ImageFolder) adapterView.getAdapter().getItem(position);
-                if (null != imageFolder) {
-//                    mImageGridAdapter.refreshData(imageFolder.images);
-                    mRecyclerAdapter.refreshData(imageFolder.images);
-                    mtvDir.setText(imageFolder.name);
-                }*/
+                ImagePickModel.getInstance().setmCurSelectedAlbumIndex(position);
+                mGridAdapter.refreshData(ImagePickModel.getInstance().getmAlbums().get(position).items);
+                folder_name_tv.setText(ImagePickModel.getInstance().getmAlbums().get(position).name);
+                mPopupWindow.dismiss();
             }
         });
         mPopupWindow.setMargin(bottom_panel.getHeight());
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }

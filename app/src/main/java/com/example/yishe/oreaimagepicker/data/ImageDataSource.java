@@ -60,6 +60,7 @@ public class ImageDataSource implements LoaderManager.LoaderCallbacks<Cursor> {
     @NonNull
     @Override
     public Loader<Cursor> onCreateLoader(int i, @Nullable Bundle bundle) {
+        Log.i(TAG,"onCreateLoader");
         Context context = mContext.get();
         if(context == null) return null;
         CursorLoader cursorLoader = new CursorLoader(mContext.get(),URI,PROJECTIONS,null,null,MediaStore.Images.Media.DATE_ADDED + " DESC");
@@ -68,6 +69,7 @@ public class ImageDataSource implements LoaderManager.LoaderCallbacks<Cursor> {
 
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor cursor) {
+        Log.i(TAG,"onLoadFinished");
         List<Album> albums = new ArrayList<>();
         if(cursor != null){
             List<ImageItem> items = new ArrayList<>();

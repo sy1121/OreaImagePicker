@@ -6,11 +6,12 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.FileProvider;
-
+import android.util.Log;
 
 import com.example.yishe.oreaimagepicker.data.ImageDataSource;
 import com.example.yishe.oreaimagepicker.entity.Album;
@@ -25,24 +26,26 @@ import java.util.List;
 import java.util.Locale;
 
 public class ImagePickModel {
-    private List<Album> mAlbums;
+    private static final String TAG = "ImagePickModel";
+
+    private ArrayList<Album> mAlbums;
     private int mCurSelectedAlbumIndex;
-    private List<ImageItem> selectedImages;
+    private ArrayList<ImageItem> mSelectedImages;
     private static volatile ImagePickModel mInstance;
 
-    private File takeImageFile;
+    private File mTakeImageFile;
 
     //配置设置
-    private boolean multiMode = false;    //图片选择模式
-    private int selectLimit = 9;         //最大选择图片数量
-    private boolean crop = false;         //裁剪
-    private boolean preview = false;     //是否预览
-    private boolean showCamera = true;   //显示相机
+    private boolean mMultiMode = false;    //图片选择模式
+    private int mSelectLimit = 9;         //最大选择图片数量
+    private boolean mCrop = false;         //裁剪
+    private boolean mPreview = false;     //是否预览
+    private boolean mShowCamera = true;   //显示相机
 
 
     private ImagePickModel(){
         mAlbums = new ArrayList<>();
-        selectedImages = new ArrayList<>();
+        mSelectedImages = new ArrayList<>();
     }
 
     public static ImagePickModel getInstance(){
@@ -61,8 +64,9 @@ public class ImagePickModel {
         new ImageDataSource(context, new ImageDataSource.OnImageLoadListener() {
             @Override
             public void onLoadFinished(List<Album> albums) {
+                Log.i(TAG,"onLoadFinished");
                 mAlbums.clear();
-                mAlbums.addAll(albums);
+                mAlbums.addAll(new ArrayList<>(albums));
                 if(!mAlbums.isEmpty()){
                     mCurSelectedAlbumIndex = 0; //默认选中第一相册
                 }
@@ -81,10 +85,10 @@ public class ImagePickModel {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         if (takePictureIntent.resolveActivity(activity.getPackageManager()) != null) {
-            if (Utils.existSDCard()) takeImageFile = new File(Environment.getExternalStorageDirectory(), "/DCIM/camera/");
-            else takeImageFile = Environment.getDataDirectory();
-            takeImageFile = createFile(takeImageFile, "IMG_", ".jpg");
-            if (takeImageFile != null) {
+            if (Utils.existSDCard()) mTakeImageFile = new File(Environment.getExternalStorageDirectory(), "/DCIM/camera/");
+            else mTakeImageFile = Environment.getDataDirectory();
+            mTakeImageFile = createFile(mTakeImageFile, "IMG_", ".jpg");
+            if (mTakeImageFile != null) {
                 // 默认情况下，即不需要指定intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
                 // 照相机有自己默认的存储路径，拍摄的照片将返回一个缩略图。如果想访问原始图片，
                 // 可以通过dat extra能够得到原始图片位置。即，如果指定了目标uri，data就没有数据，
@@ -92,14 +96,14 @@ public class ImagePickModel {
 
                 Uri uri;
                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
-                    uri = Uri.fromFile(takeImageFile);
+                    uri = Uri.fromFile(mTakeImageFile);
                 } else {
 
                     /**
                      * 7.0 调用系统相机拍照不再允许使用Uri方式，应该替换为FileProvider
                      * 并且这样可以解决MIUI系统上拍照返回size为0的情况
                      */
-                    uri = FileProvider.getUriForFile(activity, Utils.getFileProviderName(activity), takeImageFile);
+                    uri = FileProvider.getUriForFile(activity, Utils.getFileProviderName(activity), mTakeImageFile);
                     //加入uri权限 要不三星手机不能拍照
                     List<ResolveInfo> resInfoList = activity.getPackageManager().queryIntentActivities(takePictureIntent, PackageManager.MATCH_DEFAULT_ONLY);
                     for (ResolveInfo resolveInfo : resInfoList) {
@@ -130,7 +134,7 @@ public class ImagePickModel {
     }
 
     public void release(){
-        takeImageFile= null;
+        mTakeImageFile= null;
         mInstance = null;
     }
 
@@ -140,47 +144,47 @@ public class ImagePickModel {
 
 
     public boolean isMultiMode() {
-        return multiMode;
+        return mMultiMode;
     }
 
     public void setMultiMode(boolean multiMode) {
-        this.multiMode = multiMode;
+        this.mMultiMode = multiMode;
     }
 
     public int getSelectLimit() {
-        return selectLimit;
+        return mSelectLimit;
     }
 
     public void setSelectLimit(int selectLimit) {
-        this.selectLimit = selectLimit;
+        this.mSelectLimit = selectLimit;
     }
 
     public boolean isCrop() {
-        return crop;
+        return mCrop;
     }
 
     public void setCrop(boolean crop) {
-        this.crop = crop;
+        this.mCrop = crop;
     }
 
     public boolean isPreview() {
-        return preview;
+        return mPreview;
     }
 
     public void setPreview(boolean preview) {
-        this.preview = preview;
+        this.mPreview = preview;
     }
 
     public boolean isShowCamera() {
-        return showCamera;
+        return mShowCamera;
     }
 
     public void setShowCamera(boolean showCamera) {
-        this.showCamera = showCamera;
+        this.mShowCamera = showCamera;
     }
 
     public File getTakeImageFile() {
-        return takeImageFile;
+        return mTakeImageFile;
     }
 
 
@@ -189,7 +193,7 @@ public class ImagePickModel {
     }
 
     public List<ImageItem> getSelectedImages() {
-        return selectedImages;
+        return mSelectedImages;
     }
 
     public int getmCurSelectedAlbumIndex() {
@@ -200,4 +204,27 @@ public class ImagePickModel {
         this.mCurSelectedAlbumIndex = mCurSelectedAlbumIndex;
     }
 
+    public void onSaveInstanceState(Bundle outState){
+        outState.putParcelableArrayList("mAlbums",mAlbums);
+        outState.putParcelableArrayList("mSelectedImages",mSelectedImages);
+        outState.putInt("mCurSelectedAlbumIndex",mCurSelectedAlbumIndex);
+        outState.putBoolean("mMultiMode",mMultiMode);
+        outState.putInt("mSelectLimit",mSelectLimit);
+        outState.putBoolean("mCrop",mCrop);
+        outState.putBoolean("mPreview",mPreview);
+        outState.putBoolean("mShowCamera",mShowCamera);
+        outState.putSerializable("mTakeImageFile",mTakeImageFile);
+    }
+
+    public void onRestoreInstanceState(Bundle savedInstanceState){
+        mAlbums = savedInstanceState.getParcelableArrayList("mAlbums");
+        mSelectedImages = savedInstanceState.getParcelableArrayList("mSelectedImages");
+        mCurSelectedAlbumIndex = savedInstanceState.getInt("mCurSelectedAlbumIndex",0);
+        mMultiMode = savedInstanceState.getBoolean("mMultiMode",false);
+        mSelectLimit = savedInstanceState.getInt("mSelectLimit",9);
+        mCrop = savedInstanceState.getBoolean("mCrop",false);
+        mPreview = savedInstanceState.getBoolean("mPreview",false);
+        mShowCamera = savedInstanceState.getBoolean("mShowCamera",false);
+        mTakeImageFile = (File)savedInstanceState.getSerializable("mTakeImageFile");
+    }
 }
