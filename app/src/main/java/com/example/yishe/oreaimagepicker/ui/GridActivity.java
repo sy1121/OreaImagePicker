@@ -66,6 +66,7 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
     private static final int PERMISSION_STORAGE_CODE = 0x10;
     private static final int PERMISSION_CAMERA_CODE  = 0x11;
     private static final int REQUEST_CODE_TAKE_PICTURE = 0x100;
+    private static final int REQUEST_CODE_PREVIEW = 0x101;
     private ImageSelectAdapter mGridAdapter;
     private ImageFolderListAdapter mAlbumAdapter;
 
@@ -136,7 +137,7 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
 
         mGridAdapter = new ImageSelectAdapter(this,null);
         image_grid_rv.setLayoutManager(new GridLayoutManager(this, 3));
-        image_grid_rv.addItemDecoration(new GridSpacingItemDecoration(3, Utils.dpToPx(2), true));
+        image_grid_rv.addItemDecoration(new GridSpacingItemDecoration(3, Utils.dpToPx(2), false));
         image_grid_rv.setAdapter(mGridAdapter);
 
         mGridAdapter.setCameraClickListener(new ImageSelectAdapter.OnCameraClickListener() {
@@ -155,7 +156,7 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
             public void onItemClick(int pos) {
                 if (ImagePickModel.getInstance().isMultiMode()) {
                     //预览
-
+                    goPreview(pos);
                 }else{
                     Intent intent = new Intent();
                     ArrayList<ImageItem> selectedImages = new ArrayList<>();
@@ -173,7 +174,9 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onChange(int pos,boolean isChecked) {
                 if(!ImagePickModel.getInstance().isMultiMode()) return;
-                ImagePickModel.getInstance().notifyCheckChanged(pos,isChecked);
+                int curAlbumIndex = ImagePickModel.getInstance().getmCurSelectedAlbumIndex();
+                ImageItem curImage = ImagePickModel.getInstance().getmAlbums().get(curAlbumIndex).items.get(pos);
+                ImagePickModel.getInstance().notifyCheckChanged(curImage,isChecked);
             }
         });
 
@@ -260,6 +263,12 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
                     finish();
                 }
                 break;
+            case REQUEST_CODE_PREVIEW:
+                Log.i(TAG,"back from preview");
+                if(resultCode == Activity.RESULT_OK){{
+                    sendResult();
+                }}
+                break;
         }
     }
 
@@ -275,6 +284,9 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.send_text:
                 sendResult();
+                break;
+            case R.id.preview_btn:
+                goPreview(-1);
                 break;
         }
     }
@@ -308,7 +320,7 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onDestroy() {
-        ImagePickModel.getInstance().removeCheckChangeListener(this);
+        ImagePickModel.getInstance().unregisterCheckChangeListener(this);
         ImagePickModel.getInstance().release();
         super.onDestroy();
     }
@@ -319,6 +331,15 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
         intent.putParcelableArrayListExtra("images",selectedImages);
         setResult(Activity.RESULT_OK,intent);
         finish();
+    }
+
+    private void goPreview(int pos){
+        Intent intent = new Intent(GridActivity.this,PreviewActivity.class);
+        if(pos > -1){
+            intent.putExtra(PreviewActivity.PIC_SELECTED_ALBUM_INDEX,ImagePickModel.getInstance().getmCurSelectedAlbumIndex());
+            intent.putExtra(PreviewActivity.PIC_SELECTED_INDEX_PARAM,pos);
+        }
+        startActivityForResult(intent,REQUEST_CODE_PREVIEW);
     }
 
 

@@ -144,9 +144,7 @@ public class ImagePickModel {
     }
 
 
-    public void notifyCheckChanged(int pos,boolean isChecked){
-        int curAlbumIndex = ImagePickModel.getInstance().getmCurSelectedAlbumIndex();
-        ImageItem curImage = ImagePickModel.getInstance().getmAlbums().get(curAlbumIndex).items.get(pos);
+    public void notifyCheckChanged(ImageItem curImage,boolean isChecked){
         if(isChecked){
             ImagePickModel.getInstance().getSelectedImages().add(curImage);
         }else{
@@ -185,7 +183,7 @@ public class ImagePickModel {
         mCheckChangeListeners.add(listener);
     }
 
-    public void removeCheckChangeListener(OnCheckChangeListener listener){
+    public void unregisterCheckChangeListener(OnCheckChangeListener listener){
         if(mCheckChangeListeners == null) return ;
         mCheckChangeListeners.remove(listener);
     }

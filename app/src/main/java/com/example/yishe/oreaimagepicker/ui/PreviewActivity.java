@@ -1,13 +1,14 @@
 package com.example.yishe.oreaimagepicker.ui;
 
 import android.app.Activity;
-import android.media.Image;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -16,16 +17,16 @@ import com.example.yishe.oreaimagepicker.R;
 import com.example.yishe.oreaimagepicker.adapter.HorizontalListAdapter;
 import com.example.yishe.oreaimagepicker.adapter.ImagePreviewAdapter;
 import com.example.yishe.oreaimagepicker.entity.ImageItem;
+import com.example.yishe.oreaimagepicker.listener.OnCheckChangeListener;
 import com.example.yishe.oreaimagepicker.model.ImagePickModel;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import butterknife.BindView;
+import butterknife.ButterKnife;
 
-public class PreviewActivity extends AppCompatActivity implements View.OnClickListener{
+public class PreviewActivity extends AppCompatActivity implements View.OnClickListener, OnCheckChangeListener {
+    private static final String TAG = "PreviewActivity";
 
     @BindView(R.id.back_icon)
     ImageView back_btn;
@@ -48,17 +49,11 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
     @BindView(R.id.preview_footer)
     RelativeLayout mFooter;
 
-    private static final String TAG = "PreviewPage";
-    public static final String PIC_SET_PARAM = "pic_urls_param";
     public static final String PIC_SELECTED_INDEX_PARAM = "pic_selected_index_param";
     public static final String PIC_SELECTED_ALBUM_INDEX = "pic_selected_album_index";
-    private static final int INDEX_SELECTED_PICS = 1;
-    private static final int INDEX_CUR_ALBUM_PICS = 2;
-
 
     private List<ImageItem> mCurAlbumPicSet;
     private int mShowIndex = -1; //正在预览的照片位置索引
-    private int mSelectedCount = 0;
     private int mSelectedAlbumIndex = -1;
     private ImagePickModel mImagePickModel;
 
@@ -69,7 +64,9 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_preview);
+        ButterKnife.bind(this);
         mImagePickModel = ImagePickModel.getInstance();
         mSelectedAlbumIndex = getIntent().getIntExtra(PIC_SELECTED_ALBUM_INDEX,-1);
         mShowIndex = getIntent().getIntExtra(PIC_SELECTED_INDEX_PARAM,0);
@@ -81,6 +78,7 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
 
         initView();
         initData();
+        mImagePickModel.registerCheckChangeListener(this);
     }
 
     private void initView(){
@@ -99,52 +97,9 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
         initViewPager();
     }
 
-
-    private void doPageSelected(){
-        refreshTitle();
-        refreshCheckbox();
-    }
-
-    private void doCheckChanged(){
-        /*Image cur = mCurAlbumPicSet.get(mShowIndex);
-        int indexInSelectedSet=findPosInPicList(cur.getUrl(),INDEX_SELECTED_PICS);
-        if(cur.isSelected()){
-            mChooseCheck.setImageResource(R.drawable.checkbox_normal);
-            cur.setSelected(false);
-            mSelectedCount--;
-            mSelectedPicSet.remove(cur);
-        }else{
-            mChooseCheck.setImageResource(R.drawable.checkbox_checked);
-            cur.setSelected(true);
-            mSelectedCount++;
-            mSelectedPicSet.add(cur);
-        }*/
-
-        refreshSendBtn();
-        Log.i("hahaha","doCheckChange");
-        if(mSelectedCount==0){
-            mHorizontalPanel.setVisibility(View.GONE);
-            //mRecyclerView.setVisibility(View.GONE);
-        }else {
-            mHorizontalPanel.setVisibility(View.VISIBLE);
-            //mRecyclerView.setVisibility(View.VISIBLE);
-        }
-        mHorizontalListAdapter.notifyDataSetChanged();
-       /* if(indexInSelectedSet ==-1){ //之前没有选择，添加，只需要更新最后一个
-            //mHorizontalListAdapter.notifyItemInserted(mSelectedPicSet.size()-1);
-            mHorizontalListAdapter.notifyDataSetChanged();
-            mRecyclerView.smoothScrollToPosition(mSelectedPicSet.size()-1);
-        }else{//删除
-           *//* mHorizontalListAdapter.notifyItemRemoved(indexInSelectedSet);
-            mHorizontalListAdapter.notifyItemRangeChanged(0,mSelectedPicSet.size());*//*
-            mHorizontalListAdapter.notifyDataSetChanged();
-        }*/
-
-    }
-
     private void refreshSendBtn(){
-        if(mSelectedCount >0){
-            send_tv.setText(String.format(getResources().getString(R.string.send_enable),mSelectedCount+"",ImagePickModel.getInstance().getSelectLimit()+"")); //"发送("+mSelectedCount+"/9)"
+        if(ImagePickModel.getInstance().getSelectedImages().size() > 0){
+            send_tv.setText(String.format(getResources().getString(R.string.send_enable),ImagePickModel.getInstance().getSelectedImages().size()+"",ImagePickModel.getInstance().getSelectLimit()+"")); //"发送("+mSelectedCount+"/9)"
         }else{
             send_tv.setText(getResources().getString(R.string.send_disable));
         }
@@ -163,25 +118,16 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
-    private void refreshRecyclerView(int lastIndex,int curIndex){
-        if(mSelectedCount==0){
+    private void refreshBottomPanel(){
+        if(ImagePickModel.getInstance().getSelectedImages().size() == 0){
             mHorizontalPanel.setVisibility(View.GONE);
         }else{
             mHorizontalPanel.setVisibility(View.VISIBLE);
-            if(lastIndex!=-1){
-                mHorizontalListAdapter.notifyItemChanged(lastIndex);
-            }
-            if(curIndex!=-1){
-                mHorizontalListAdapter.notifyItemChanged(curIndex);
-                mRecyclerView.smoothScrollToPosition(curIndex);
-            }
         }
-
-
     }
 
     private void initRecyclerview(){
-       /* mHorizontalListAdapter = new HorizontalListAdapter(this,mSelectedPicSet);
+        mHorizontalListAdapter = new HorizontalListAdapter(this,ImagePickModel.getInstance().getSelectedImages(),mCurAlbumPicSet.get(mShowIndex));
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
         linearLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         mRecyclerView.setLayoutManager(linearLayoutManager);
@@ -189,53 +135,32 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
         mHorizontalListAdapter.setOnItemClickListener(new HorizontalListAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(int pos) {
-                if(!mCurAlbumPicSet.get(mShowIndex).path.equals(mSelectedPicSet.get(pos).path)){
-                    int lastIndexInSelectedSet = findPosInPicList(mCurAlbumPicSet.get(mShowIndex).path,INDEX_SELECTED_PICS);
-                    ImageItem cur = mCurAlbumPicSet.get(mShowIndex);
-                    int indexInAlbum =findPosInPicList(mSelectedPicSet.get(pos).path,INDEX_CUR_ALBUM_PICS);
-                    if(indexInAlbum<0) return ;
-                    mShowIndex  = indexInAlbum;
-                    int curIndexInSelectedSet = findPosInPicList(mCurAlbumPicSet.get(mShowIndex).path,INDEX_SELECTED_PICS);
-                    cur = mCurAlbumPicSet.get(mShowIndex);
+                mShowIndex = mCurAlbumPicSet.indexOf(ImagePickModel.getInstance().getSelectedImages().get(pos));
+                refreshTitle();
+                mViewPager.setCurrentItem(mShowIndex);
+                mHorizontalListAdapter.notifyDataSetChanged();
+                refreshCheckbox();
 
-                    mViewPager.setCurrentItem(mShowIndex);
-                    refreshTitle();
-                    refreshCheckbox();
-                    refreshRecyclerView(lastIndexInSelectedSet,curIndexInSelectedSet);
-                }
             }
         });
-*/
-        if(mSelectedCount==0){
-            mHorizontalPanel.setVisibility(View.GONE);
-        }else{
-            mHorizontalPanel.setVisibility(View.VISIBLE);
-        }
+        refreshBottomPanel();
 
     }
 
     private void initViewPager(){
-        //生成viewpager展示的ImageView
-        List<ImageView> imageViews  = new ArrayList<>();
-        for(int i=0;i<mCurAlbumPicSet.size();i++){
-            ImageView imageView= new ImageView(this);
-            imageView.setTag(mCurAlbumPicSet.get(i));
-            //imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            imageView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if(mHeader.getVisibility()==View.VISIBLE){
-                        mHeader.setVisibility(View.GONE);
-                        mFooter.setVisibility(View.GONE);
-                    }else{
-                        mHeader.setVisibility(View.VISIBLE);
-                        mFooter.setVisibility(View.VISIBLE);
-                    }
+        mPreviewAdapter = new ImagePreviewAdapter(this,mCurAlbumPicSet);
+        mPreviewAdapter.setOnImageClickListener(new ImagePreviewAdapter.OnImageClickListener() {
+            @Override
+            public void onClick() {
+                if(mHeader.getVisibility()==View.VISIBLE){
+                    mHeader.setVisibility(View.GONE);
+                    mFooter.setVisibility(View.GONE);
+                }else{
+                    mHeader.setVisibility(View.VISIBLE);
+                    mFooter.setVisibility(View.VISIBLE);
                 }
-            });
-            imageViews.add(imageView);
-        }
-        mPreviewAdapter = new ImagePreviewAdapter(this,imageViews);
+            }
+        });
         mViewPager.setAdapter(mPreviewAdapter);
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
@@ -246,15 +171,13 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
             @Override
             public void onPageSelected(int position) {
                 //切换图片的预览状态
-                /*int lastIndexInSelectedSet = findPosInPicList(mCurAlbumPicSet.get(mShowIndex).getUrl(),INDEX_SELECTED_PICS);
-                ImageItem curImage = mCurAlbumPicSet.get(mShowIndex);
-                //curImage.setPreViewing(false);
-                mShowIndex = position; //更新预览图片的index
-                int curIndexInSelectedSet = findPosInPicList(mCurAlbumPicSet.get(mShowIndex).getUrl(),INDEX_SELECTED_PICS);
-                ImageItem newSelectedImage = mCurAlbumPicSet.get(mShowIndex);
-                //newSelectedImage.setPreViewing(true);
-                refreshRecyclerView(lastIndexInSelectedSet,curIndexInSelectedSet);
-                doPageSelected();*/ //更新其他控件的状态显示
+                mShowIndex = position;
+                //修改title
+                refreshTitle();
+                //修改选择框
+                refreshCheckbox();
+                //修改横向预览列表
+                mHorizontalListAdapter.notifyPreviewImageChange(mCurAlbumPicSet.get(mShowIndex));
             }
 
             @Override
@@ -267,49 +190,11 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
     }
 
 
-    private List<Image> pathToImage(List<String> paths){
-        List<Image> images = new ArrayList<>();
-        Set<String> sets = new HashSet<>();
-        for(int i=0;i<paths.size();i++){
-            sets.add(paths.get(i));
-        }
-      /*  for(Image image:mImagePickModel.getmFolders().get(0).getImages()){
-            if(sets.contains(image.getUrl())){
-                images.add(image);
-            }
-        }*/
-        return images;
-    }
-
-    private int findPosInPicList(String picPath,int setIndex){
-        /*List<Image> searchSet= mCurAlbumPicSet;
-        switch (setIndex){
-            case INDEX_CUR_ALBUM_PICS:
-                searchSet=mCurAlbumPicSet;
-                break;
-            case INDEX_SELECTED_PICS:
-                searchSet = mSelectedPicSet;
-                break;
-        }
-        if(TextUtils.isEmpty(picPath)||searchSet==null||searchSet.isEmpty()) return -1;
-        for(int i=0;i<searchSet.size();i++){
-            if(searchSet.get(i).getUrl().equals(picPath)) return i;
-        }*/
-        return -1;
-    }
-
-
-
-
-
     @Override
     public void onDestroy() {
         super.onDestroy();
-     //   mCurAlbumPicSet.get(mShowIndex).setPreViewing(false);
-        mCurAlbumPicSet.clear();
-        mCurAlbumPicSet = null;
-        mShowIndex=-1;
-        mSelectedCount =0;
+        mImagePickModel.unregisterCheckChangeListener(this);
+
     }
 
     @Override
@@ -325,9 +210,27 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
             case R.id.edit_btn:
                 break;
             case R.id.choose_check:
-                doCheckChanged();
+                ImagePickModel.getInstance().notifyCheckChanged(mCurAlbumPicSet.get(mShowIndex),!ImagePickModel.getInstance().getSelectedImages().contains(mCurAlbumPicSet.get(mShowIndex)));
                 break;
 
+        }
+    }
+
+    @Override
+    public void onChange() {
+        //修改checkbox
+        refreshCheckbox();
+        //修改发送按钮
+        refreshSendBtn();
+        //修改水平预览状态
+        mHorizontalListAdapter.notifyDataSetChanged();
+        mRecyclerView.smoothScrollToPosition(mHorizontalListAdapter.getItemCount());
+        //bottomPanel可见
+        refreshBottomPanel();
+        //点击预览按钮进来的做一下特殊处理
+        if(mSelectedAlbumIndex == -1){
+            mPreviewAdapter.notifyDataSetChanged();
+            refreshTitle();
         }
     }
 }

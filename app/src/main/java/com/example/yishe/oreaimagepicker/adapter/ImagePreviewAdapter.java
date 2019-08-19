@@ -1,18 +1,21 @@
 package com.example.yishe.oreaimagepicker.adapter;
 
 import android.content.Context;
-import android.net.Uri;
 import android.support.v4.view.PagerAdapter;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.bumptech.glide.Glide;
+import com.example.yishe.oreaimagepicker.R;
+import com.example.yishe.oreaimagepicker.entity.ImageItem;
 
 import java.util.List;
 
+
 public class ImagePreviewAdapter extends PagerAdapter {
 
-    private List<ImageView> datas;
+    private List<ImageItem> mImages;
     private Context mContext;
 
     public OnImageClickListener getOnImageClickListener() {
@@ -29,15 +32,15 @@ public class ImagePreviewAdapter extends PagerAdapter {
         void onClick();
     }
 
-    public ImagePreviewAdapter(Context context,List<ImageView> views){
+    public ImagePreviewAdapter(Context context,List<ImageItem> images){
         mContext = context;
-        datas =views;
+        mImages = images;
     }
 
 
     @Override
     public int getCount() {
-        return datas.size();
+        return mImages.size();
     }
 
     @Override
@@ -47,18 +50,24 @@ public class ImagePreviewAdapter extends PagerAdapter {
 
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
-        container.addView(datas.get(position));
-     /*   Image image = (Image)datas.get(position).getTag();
-        PicassoWrapper.getInstance().build(mContext).load(Uri.parse("file://"+image.getUrl())).resize(image.getWidth(),image.getHeight()).into(datas.get(position));
-      */  if(onImageClickListener!=null){
-            onImageClickListener.onClick();
-        }
-        return datas.get(position);
+        ImageView imageView = new ImageView(mContext);
+        container.addView(imageView);
+        ImageItem image = mImages.get(position);
+        Glide.with(mContext).load(image.path).placeholder(mContext.getDrawable(R.color.color_pic_back)).into(imageView);
+        imageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(onImageClickListener!=null){
+                    onImageClickListener.onClick();
+                }
+            }
+        });
+        return imageView;
     }
 
 
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
-        container.removeView(datas.get(position));
+        container.removeView((View)object);
     }
 }
