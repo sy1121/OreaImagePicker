@@ -34,8 +34,15 @@
         android:layout_centerVertical="true"
         android:layout_alignParentRight="true"
         android:layout_marginRight="15dp"
-        android:textColor="@color/color_mogreen"
+        android:minWidth="60dp"
+        android:background="@drawable/selector_finish_btn_bg"
+        android:textColor="@color/c_white"
+        android:paddingLeft="15dp"
+        android:paddingRight="15dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
         android:textSize="15sp"
+        android:textAlignment="center"
         android:text="发送"
         android:enabled="false"/>
 

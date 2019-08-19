@@ -71,9 +71,10 @@ public class ImageDataSource implements LoaderManager.LoaderCallbacks<Cursor> {
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor cursor) {
         Log.i(TAG,"onLoadFinished");
         List<Album> albums = new ArrayList<>();
-        if(cursor != null){
+        if(cursor != null && cursor.getCount() > 0){
+            cursor.moveToFirst();
             List<ImageItem> items = new ArrayList<>();
-            while(cursor.moveToNext()){
+            do{
                 String name = cursor.getString(cursor.getColumnIndexOrThrow(PROJECTIONS[0]));
                 String path = cursor.getString(cursor.getColumnIndexOrThrow(PROJECTIONS[1]));
                 int width = cursor.getInt(cursor.getColumnIndexOrThrow(PROJECTIONS[2]));
@@ -107,7 +108,7 @@ public class ImageDataSource implements LoaderManager.LoaderCallbacks<Cursor> {
                     newAlbum.thumbnail = image;
                     albums.add(newAlbum);
                 }
-            }
+            }while(cursor.moveToNext());
             if(!items.isEmpty()) {
                 //添加全部图片相册
                 Album allImagesAlbum = new Album();
@@ -117,8 +118,6 @@ public class ImageDataSource implements LoaderManager.LoaderCallbacks<Cursor> {
                 allImagesAlbum.thumbnail = items.get(0);
                 albums.add(0,allImagesAlbum);
             }
-            Log.i(TAG,"image size = " + items.size());
-            Log.i(TAG,"alnum size = " + albums.size());
         }
 
         if(mLoadListener != null){

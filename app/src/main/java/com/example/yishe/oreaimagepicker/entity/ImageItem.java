@@ -19,6 +19,12 @@ public class ImageItem implements Parcelable {
     public String mediaType; //媒体类型
     public long createTime; //创建时间
 
+    @Override
+    public boolean equals(Object obj) {
+        if(!(obj instanceof ImageItem)) return false;
+        ImageItem item = (ImageItem)obj;
+        return name.equals(item.name) && path.equals(item.path);
+    }
 
     @Override
     public int describeContents() {

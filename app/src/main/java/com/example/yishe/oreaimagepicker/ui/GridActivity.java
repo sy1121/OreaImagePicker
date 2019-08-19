@@ -27,6 +27,7 @@ import com.example.yishe.oreaimagepicker.R;
 import com.example.yishe.oreaimagepicker.adapter.ImageFolderListAdapter;
 import com.example.yishe.oreaimagepicker.adapter.ImageSelectAdapter;
 import com.example.yishe.oreaimagepicker.entity.ImageItem;
+import com.example.yishe.oreaimagepicker.listener.OnCheckChangeListener;
 import com.example.yishe.oreaimagepicker.model.ImagePickModel;
 import com.example.yishe.oreaimagepicker.util.Utils;
 import com.example.yishe.oreaimagepicker.widget.FolderPopupWindow;
@@ -38,7 +39,7 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class GridActivity extends AppCompatActivity implements View.OnClickListener{
+public class GridActivity extends AppCompatActivity implements View.OnClickListener, OnCheckChangeListener {
 
     private static final String TAG = "GridActivity";
 
@@ -85,7 +86,6 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
     private List<ImageItem> images;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -98,6 +98,7 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
         }else{
             ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},PERMISSION_STORAGE_CODE);
         }
+        ImagePickModel.getInstance().registerCheckChangeListener(this);
     }
 
     @Override
@@ -157,13 +158,11 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
 
                 }else{
                     Intent intent = new Intent();
-                    Bundle bundle = new Bundle();
                     ArrayList<ImageItem> selectedImages = new ArrayList<>();
                     selectedImages.add(ImagePickModel.getInstance().getmAlbums().get(
                             ImagePickModel.getInstance().getmCurSelectedAlbumIndex()
                     ).items.get(pos));
-                    bundle.putParcelableArrayList("images",selectedImages);
-                    intent.putExtra("bundle",bundle);
+                    intent.putParcelableArrayListExtra("images",selectedImages);
                     setResult(Activity.RESULT_OK,intent);
                     finish();
                 }
@@ -172,10 +171,15 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
 
         mGridAdapter.setPicCheckChangeListener(new ImageSelectAdapter.OnPicCheckChangeListener() {
             @Override
-            public void onChange() {
+            public void onChange(int pos,boolean isChecked) {
                 if(!ImagePickModel.getInstance().isMultiMode()) return;
+                ImagePickModel.getInstance().notifyCheckChanged(pos,isChecked);
             }
         });
+
+        if(ImagePickModel.getInstance().isPreview()){
+            preview_btn.setVisibility(View.VISIBLE);
+        }
 
     }
 
@@ -241,8 +245,20 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         switch (requestCode){
             case REQUEST_CODE_TAKE_PICTURE:
-                Log.i(TAG,"take picture return ");
+                if(resultCode == Activity.RESULT_OK){
+                    //发送广播通知图片增加了
+                    ImagePickModel.galleryAddPic(this, ImagePickModel.getInstance().getTakeImageFile());
+                    String path = ImagePickModel.getInstance().getTakeImageFile().getAbsolutePath();
+                    ImageItem imageItem = new ImageItem();
+                    imageItem.path = path;
 
+                    Intent intent = new Intent();
+                    ArrayList<ImageItem> selectedImages = new ArrayList<>();
+                    selectedImages.add(imageItem);
+                    intent.putParcelableArrayListExtra("images",selectedImages);
+                    setResult(Activity.RESULT_OK,intent);
+                    finish();
+                }
                 break;
         }
     }
@@ -256,6 +272,9 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.folder_name:
             case R.id.text_indicator:
                 showOrHidePopWindow();
+                break;
+            case R.id.send_text:
+                sendResult();
                 break;
         }
     }
@@ -289,6 +308,45 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onDestroy() {
+        ImagePickModel.getInstance().removeCheckChangeListener(this);
+        ImagePickModel.getInstance().release();
         super.onDestroy();
+    }
+
+    private void sendResult(){
+        ArrayList<ImageItem> selectedImages = ImagePickModel.getInstance().getSelectedImages();
+        Intent intent = new Intent();
+        intent.putParcelableArrayListExtra("images",selectedImages);
+        setResult(Activity.RESULT_OK,intent);
+        finish();
+    }
+
+
+
+    @Override
+    public void onChange() {
+        //图片recycler
+        ImagePickModel model = ImagePickModel.getInstance();
+        mGridAdapter.refreshData(model.getmAlbums().get(model.getmCurSelectedAlbumIndex()).items);
+
+        int selectedSize = ImagePickModel.getInstance().getSelectedImages().size();
+        int maxSelectSize = ImagePickModel.getInstance().getSelectLimit();
+        //右上角 --> 完成
+        if(selectedSize > 0){
+            send_tv.setEnabled(true);
+            send_tv.setText(String.format(getResources().getString(R.string.send_enable),selectedSize+"",maxSelectSize+""));
+        }else{
+            send_tv.setEnabled(false);
+            send_tv.setText(R.string.send_disable);
+        }
+
+        //右下角 -- > 预览
+        if(selectedSize > 0){
+            preview_btn.setEnabled(true);
+            preview_btn.setText(String.format(getResources().getString(R.string.preview_enable),selectedSize+""));
+        }else{
+            preview_btn.setEnabled(false);
+            preview_btn.setText(R.string.preview_disable);
+        }
     }
 }

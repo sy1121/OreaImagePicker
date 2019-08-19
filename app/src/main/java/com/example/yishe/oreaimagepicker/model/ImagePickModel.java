@@ -1,6 +1,7 @@
 package com.example.yishe.oreaimagepicker.model;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -16,6 +17,7 @@ import android.util.Log;
 import com.example.yishe.oreaimagepicker.data.ImageDataSource;
 import com.example.yishe.oreaimagepicker.entity.Album;
 import com.example.yishe.oreaimagepicker.entity.ImageItem;
+import com.example.yishe.oreaimagepicker.listener.OnCheckChangeListener;
 import com.example.yishe.oreaimagepicker.util.Utils;
 
 import java.io.File;
@@ -31,6 +33,7 @@ public class ImagePickModel {
     private ArrayList<Album> mAlbums;
     private int mCurSelectedAlbumIndex;
     private ArrayList<ImageItem> mSelectedImages;
+    private List<OnCheckChangeListener> mCheckChangeListeners;
     private static volatile ImagePickModel mInstance;
 
     private File mTakeImageFile;
@@ -46,6 +49,7 @@ public class ImagePickModel {
     private ImagePickModel(){
         mAlbums = new ArrayList<>();
         mSelectedImages = new ArrayList<>();
+        mCheckChangeListeners = new ArrayList<>();
     }
 
     public static ImagePickModel getInstance(){
@@ -117,6 +121,18 @@ public class ImagePickModel {
         activity.startActivityForResult(takePictureIntent, requestCode);
     }
 
+
+    /**
+     * 扫描图片
+     */
+    public static void galleryAddPic(Context context, File file) {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        Uri contentUri = Uri.fromFile(file);
+        mediaScanIntent.setData(contentUri);
+        context.sendBroadcast(mediaScanIntent);
+    }
+
+
     /**
      * 根据系统时间、前缀、后缀产生一个文件
      */
@@ -128,14 +144,55 @@ public class ImagePickModel {
     }
 
 
+    public void notifyCheckChanged(int pos,boolean isChecked){
+        int curAlbumIndex = ImagePickModel.getInstance().getmCurSelectedAlbumIndex();
+        ImageItem curImage = ImagePickModel.getInstance().getmAlbums().get(curAlbumIndex).items.get(pos);
+        if(isChecked){
+            ImagePickModel.getInstance().getSelectedImages().add(curImage);
+        }else{
+            ImagePickModel.getInstance().getSelectedImages().remove(curImage);
+        }
 
-    public interface  DataLoadCallback{
-        void onLoadFinished();
+        for(OnCheckChangeListener listener : mCheckChangeListeners){
+            listener.onChange();
+        }
+
     }
 
     public void release(){
-        mTakeImageFile= null;
+        mCurSelectedAlbumIndex = -1;
         mInstance = null;
+        if(mSelectedImages != null){
+            mSelectedImages.clear();
+            mSelectedImages = null;
+        }
+
+        if(mAlbums != null){
+            mAlbums.clear();
+            mAlbums = null;
+        }
+
+        if(mCheckChangeListeners != null){
+            mCheckChangeListeners.clear();
+            mCheckChangeListeners = null;
+        }
+        mTakeImageFile= null;
+
+    }
+
+    public void registerCheckChangeListener(OnCheckChangeListener listener){
+        if(mCheckChangeListeners == null) return ;
+        mCheckChangeListeners.add(listener);
+    }
+
+    public void removeCheckChangeListener(OnCheckChangeListener listener){
+        if(mCheckChangeListeners == null) return ;
+        mCheckChangeListeners.remove(listener);
+    }
+
+
+    public interface  DataLoadCallback{
+        void onLoadFinished();
     }
 
     public boolean hasReceivedMaxCount(){
@@ -192,7 +249,7 @@ public class ImagePickModel {
         return mAlbums;
     }
 
-    public List<ImageItem> getSelectedImages() {
+    public ArrayList<ImageItem> getSelectedImages() {
         return mSelectedImages;
     }
 

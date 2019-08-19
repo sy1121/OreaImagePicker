@@ -8,6 +8,11 @@
     <string name="no_camera_permission">没有相机去权限</string>
     <string name="title_album">相册</string>
 
+    <string name="send_disable">完成</string>
+    <string name="send_enable">完成(%s/%s)</string>
+    <string name="preview_disable">预览</string>
+    <string name="preview_enable">预览(%s)</string>
+
     <item name="tag_first" type="id"></item>
     <item name="tag_second" type="id"></item>
 

@@ -78,6 +78,8 @@
             android:layout_marginRight="15dp"
             android:textSize="15sp"
             android:text="预览"
+            android:textColor="@drawable/seletor_preview_btn"
+            android:visibility="gone"
             android:enabled="false"/>
     </RelativeLayout>
 

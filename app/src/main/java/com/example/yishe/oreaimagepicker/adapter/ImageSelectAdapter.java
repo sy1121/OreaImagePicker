@@ -36,7 +36,7 @@ public class ImageSelectAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     private OnCameraClickListener cameraClickListener;
 
     public interface  OnPicCheckChangeListener{
-        void onChange();
+        void onChange(int pos,boolean checked);
     }
 
     public interface OnItemClickListener{
@@ -104,7 +104,7 @@ public class ImageSelectAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     @Override
     public int getItemCount() {
-        return ImagePickModel.getInstance().isShowCamera()?mDatas.size()+1:mDatas.size();
+        return ImagePickModel.getInstance().isShowCamera() ? mDatas.size() + 1 : mDatas.size();
     }
 
     public ImageItem getItem(int position) {
@@ -132,7 +132,7 @@ public class ImageSelectAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
         void bind(final int position){
             ImageItem item = getItem(position);
-            final int pos = ImagePickModel.getInstance().isShowCamera()?position-1:position;
+            final int pos = ImagePickModel.getInstance().isShowCamera() ? position - 1 : position;
             //Log.i(TAG,item.getUrl());
             //PicassoWrapper.getInstance().build(mContext).load(Uri.parse("file://"+item.getUrl())).fit().centerCrop().placeholder(PluginResUtil.getInstance().getPluginDrawable(R.color.color_pic_back))/*.compressImage(true)*/.into(pic);
             Glide.with(mContext).load(item.path).centerCrop().placeholder(mContext.getDrawable(R.color.color_pic_back)).into(pic);
@@ -155,9 +155,11 @@ public class ImageSelectAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                         int pos = (int)v.getTag(R.id.tag_first);
                         ImageView mask = (ImageView)v.getTag(R.id.tag_second);
                         ImageItem item = mDatas.get(pos);
+                        boolean isChecked;
                         if(mModel.getSelectedImages().contains(item)){
                             ((ImageView)v).setImageResource(R.mipmap.checkbox_normal);
                             mask.setVisibility(View.INVISIBLE);
+                            isChecked = false;
                         }else{
                             if(mModel.hasReceivedMaxCount()){
                                 Toast.makeText(mContext,"最多选中9张图片",Toast.LENGTH_SHORT).show();
@@ -165,9 +167,10 @@ public class ImageSelectAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                             }
                             ((ImageView)v).setImageResource(R.mipmap.checkbox_checked);
                             mask.setVisibility(View.VISIBLE);
+                            isChecked = true;
                         }
                         if(picCheckChangeListener!=null){
-                            picCheckChangeListener.onChange();
+                            picCheckChangeListener.onChange(pos,isChecked);
                         }
                     }
                 });
@@ -181,7 +184,7 @@ public class ImageSelectAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 @Override
                 public void onClick(View v) {
                     if(itemClickListener!=null){
-                        itemClickListener.onItemClick(position);
+                        itemClickListener.onItemClick(pos);
                     }
                 }
             });

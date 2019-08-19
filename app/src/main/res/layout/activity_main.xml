@@ -22,4 +22,9 @@
         android:layout_margin="20dp"
         android:scaleType="centerCrop"/>
 
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/selected_images_grid"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 </LinearLayout>
