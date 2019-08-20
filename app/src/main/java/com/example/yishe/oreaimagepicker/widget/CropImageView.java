@@ -285,7 +285,7 @@ public class CropImageView extends AppCompatImageView {
 
     /***计算两点之间的距离**/
     private float spacing(PointF pA,PointF pB){
-        return spacing(pA.x, pA.y, pB.x, pB,y);
+        return spacing(pA.x, pA.y, pB.x, pB.y);
     }
 
     /*** 双击触发的方法**/
