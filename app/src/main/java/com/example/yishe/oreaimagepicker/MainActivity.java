@@ -44,8 +44,10 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent,REQUEST_CODE_ALBNUM);*/
 
                 Orea.from(MainActivity.this).select()
-                        .setMultiMode(true)
-                        .setPreview(true)
+                       /* .setMultiMode(true)
+                        .setPreview(true)*/
+                       .setMultiMode(false)
+                        .setCrop(true)
                         .forResult(REQUEST_CODE_ALBNUM);
             }
         });
@@ -59,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setImageToIV(ImageItem item){
+        Log.i(TAG,"path = " + item.path);
         Glide.with(this).load(item.path).placeholder(getDrawable(R.color.color_accent)).into(mImageView);
     }
 

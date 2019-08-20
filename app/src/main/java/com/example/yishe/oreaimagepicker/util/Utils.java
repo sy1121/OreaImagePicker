@@ -17,7 +17,6 @@ public class Utils {
     public static String getFileProviderName(Context context){
         return context.getPackageName()+".provider";
     }
-
     public static int dpToPx(int dp) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, Resources.getSystem().getDisplayMetrics());
     }

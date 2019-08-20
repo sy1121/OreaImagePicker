@@ -67,6 +67,7 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
     private static final int PERMISSION_CAMERA_CODE  = 0x11;
     private static final int REQUEST_CODE_TAKE_PICTURE = 0x100;
     private static final int REQUEST_CODE_PREVIEW = 0x101;
+    private static final int REQUEST_CODE_CROP = 0x102;
     private ImageSelectAdapter mGridAdapter;
     private ImageFolderListAdapter mAlbumAdapter;
 
@@ -158,14 +159,18 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
                     //预览
                     goPreview(pos);
                 }else{
-                    Intent intent = new Intent();
-                    ArrayList<ImageItem> selectedImages = new ArrayList<>();
-                    selectedImages.add(ImagePickModel.getInstance().getmAlbums().get(
-                            ImagePickModel.getInstance().getmCurSelectedAlbumIndex()
-                    ).items.get(pos));
-                    intent.putParcelableArrayListExtra("images",selectedImages);
-                    setResult(Activity.RESULT_OK,intent);
-                    finish();
+                    if(ImagePickModel.getInstance().isCrop()){
+                        goCrop(pos);
+                    }else {
+                        Intent intent = new Intent();
+                        ArrayList<ImageItem> selectedImages = new ArrayList<>();
+                        selectedImages.add(ImagePickModel.getInstance().getmAlbums().get(
+                                ImagePickModel.getInstance().getmCurSelectedAlbumIndex()
+                        ).items.get(pos));
+                        intent.putParcelableArrayListExtra("images", selectedImages);
+                        setResult(Activity.RESULT_OK, intent);
+                        finish();
+                    }
                 }
             }
         });
@@ -269,6 +274,18 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
                     sendResult();
                 }}
                 break;
+            case REQUEST_CODE_CROP:
+                Log.i(TAG,"back from crop");
+                if(resultCode == Activity.RESULT_OK){
+                    Intent intent = new Intent();
+                    ArrayList<ImageItem> selectedImages = new ArrayList<>();
+                    selectedImages.add(data.getParcelableExtra("crop_image"));
+                    Log.i(TAG, "path = " + selectedImages.get(0).path);
+                    intent.putParcelableArrayListExtra("images", selectedImages);
+                    setResult(Activity.RESULT_OK, intent);
+                    finish();
+                }
+                break;
         }
     }
 
@@ -340,6 +357,14 @@ public class GridActivity extends AppCompatActivity implements View.OnClickListe
             intent.putExtra(PreviewActivity.PIC_SELECTED_INDEX_PARAM,pos);
         }
         startActivityForResult(intent,REQUEST_CODE_PREVIEW);
+    }
+
+    private void goCrop(int pos){
+        Intent intent = new Intent(GridActivity.this,CropActivity.class);
+        int curAblumIndex = ImagePickModel.getInstance().getmCurSelectedAlbumIndex();
+        ImageItem image = ImagePickModel.getInstance().getmAlbums().get(curAblumIndex).items.get(pos);
+        intent.putExtra("crop_image",image);
+        startActivityForResult(intent,REQUEST_CODE_CROP);
     }
 
 
