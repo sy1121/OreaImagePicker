@@ -19,6 +19,7 @@ import com.example.yishe.oreaimagepicker.entity.Album;
 import com.example.yishe.oreaimagepicker.entity.ImageItem;
 import com.example.yishe.oreaimagepicker.listener.OnCheckChangeListener;
 import com.example.yishe.oreaimagepicker.util.Utils;
+import com.example.yishe.oreaimagepicker.widget.CropImageView;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -37,6 +38,7 @@ public class ImagePickModel {
     private static volatile ImagePickModel mInstance;
 
     private File mTakeImageFile;
+    private File mCropCacheFolder; //裁剪图片路径
 
     //配置设置
     private boolean mMultiMode = false;    //图片选择模式
@@ -44,6 +46,14 @@ public class ImagePickModel {
     private boolean mCrop = false;         //裁剪
     private boolean mPreview = false;     //是否预览
     private boolean mShowCamera = true;   //显示相机
+    private int mOutputX = 800;                 //裁剪图片输出的宽
+    private int mOutPutY = 800;                 //裁剪图片输出的高
+    private int mFocusWidth = 250;              //焦点宽的宽
+    private int mFocusHeight = 250;             //焦点宽的高
+    private boolean mIsSaveRectangle = true;         //是否保存为矩形
+    private CropImageView.Style mStyle = CropImageView.Style.RECTANGLE;
+
+
 
 
     private ImagePickModel(){
@@ -259,6 +269,66 @@ public class ImagePickModel {
         this.mCurSelectedAlbumIndex = mCurSelectedAlbumIndex;
     }
 
+    public File getmCropCacheFolder(Context context) {
+        if(mCropCacheFolder == null){
+            mCropCacheFolder = new File(context.getCacheDir() + "/oreaImagePicker/cropTemp/");
+        }
+        return mCropCacheFolder;
+    }
+
+    public void setmCropCacheFolder(File mCropCacheFolder) {
+        this.mCropCacheFolder = mCropCacheFolder;
+    }
+
+    public int getmOutputX() {
+        return mOutputX;
+    }
+
+    public void setmOutputX(int mOutputX) {
+        this.mOutputX = mOutputX;
+    }
+
+    public int getmOutPutY() {
+        return mOutPutY;
+    }
+
+    public void setmOutPutY(int mOutPutY) {
+        this.mOutPutY = mOutPutY;
+    }
+
+    public int getmFocusWidth() {
+        return mFocusWidth;
+    }
+
+    public void setmFocusWidth(int mFocusWidth) {
+        this.mFocusWidth = mFocusWidth;
+    }
+
+    public int getmFocusHeight() {
+        return mFocusHeight;
+    }
+
+    public void setmFocusHeight(int mFocusHeight) {
+        this.mFocusHeight = mFocusHeight;
+    }
+
+    public boolean getmIsSaveRectangle() {
+        return mIsSaveRectangle;
+    }
+
+    public void setmIsSaveRectangle(boolean mIsSaveRectangle) {
+        this.mIsSaveRectangle = mIsSaveRectangle;
+    }
+
+    public CropImageView.Style getmStyle() {
+        return mStyle;
+    }
+
+    public void setmStyle(CropImageView.Style mStyle) {
+        this.mStyle = mStyle;
+    }
+
+
     public void onSaveInstanceState(Bundle outState){
         outState.putParcelableArrayList("mAlbums",mAlbums);
         outState.putParcelableArrayList("mSelectedImages",mSelectedImages);
@@ -269,6 +339,12 @@ public class ImagePickModel {
         outState.putBoolean("mPreview",mPreview);
         outState.putBoolean("mShowCamera",mShowCamera);
         outState.putSerializable("mTakeImageFile",mTakeImageFile);
+        outState.putSerializable("mCropCacheFolder",mCropCacheFolder);
+        outState.putInt("mOutputX",mOutputX);
+        outState.putInt("mOutPutY",mOutPutY);
+        outState.putInt("mFocusWidth",mFocusWidth);
+        outState.putInt("mFocusHeight",mFocusHeight);
+        outState.putBoolean("mIsSaveRectangle",mIsSaveRectangle);
     }
 
     public void onRestoreInstanceState(Bundle savedInstanceState){
@@ -281,5 +357,12 @@ public class ImagePickModel {
         mPreview = savedInstanceState.getBoolean("mPreview",false);
         mShowCamera = savedInstanceState.getBoolean("mShowCamera",false);
         mTakeImageFile = (File)savedInstanceState.getSerializable("mTakeImageFile");
+        mCropCacheFolder = (File)savedInstanceState.getSerializable("mCropCacheFolder");
+        mOutputX = savedInstanceState.getInt("mOutputX",800);
+        mOutPutY = savedInstanceState.getInt("mOutPutY",800);
+        mFocusWidth = savedInstanceState.getInt("mFocusWidth",250);
+        mFocusHeight = savedInstanceState.getInt("mFocusHeight",250);
+        mIsSaveRectangle = savedInstanceState.getBoolean("mIsSaveRectangle",true);
+
     }
 }

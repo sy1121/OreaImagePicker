@@ -16,17 +16,23 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 
 import com.example.yishe.oreaimagepicker.R;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 /**
  * @author yishe
@@ -72,7 +78,7 @@ public class CropImageView extends AppCompatImageView {
     private Matrix matrix = new Matrix();  //图片变换的matirx
     private Matrix savedMatrix = new Matrix(); //开始变换的时候，图片的matrix
     private PointF pA = new PointF();    //第一个手指按下的坐标
-    private PointF PB = new PointF();    //第二个手指按下的坐标
+    private PointF pB = new PointF();    //第二个手指按下的坐标
     private PointF midPoint = new PointF(); //两个手指的中间点
     private PointF doubleClickPos = new PointF(); //双击图片的时候，双击点的坐标
     private PointF mFocusMidPoint = new PointF();  //焦点框的中间点
@@ -84,10 +90,8 @@ public class CropImageView extends AppCompatImageView {
     private float mMaxScale = MAX_SCALE;    // 根据不同图片的大小，动态得到的最大缩放比
     private boolean isInited = false;       // 是否经过了onSizeChanged 初始化
     private boolean mSaving = false;        // 是否正在保存
+    private static Handler mHandler = new InnerHandler();
 
-
-    private int mWidth,mHeight; //控件宽高
-    private float mCenterX,mCenterY;//控件中心点坐标
 
     public CropImageView(Context context){
         this(context,null);
@@ -121,6 +125,7 @@ public class CropImageView extends AppCompatImageView {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        isInited = true;
         init();
     }
 
@@ -159,12 +164,11 @@ public class CropImageView extends AppCompatImageView {
         //计算出焦点框的中点的坐标和上下左右的xy值
         int viewWidth = getWidth();
         int viewHeight = getHeight();
-        float midPointX = viewHeight / 2;
+        float midPointX = viewWidth / 2;
         float midPointY = viewHeight / 2;
-        mFocusMidPoint = new PointF(midPointX,midPointY);
-
+        mFocusMidPoint = new PointF(midPointX, midPointY);
         if(mStyle == Style.CIRCLE){
-            int focusSize = Math.min(mFocusedWidth,mFocusedHeight);
+            int focusSize = Math.min(mFocusedWidth, mFocusedHeight);
             mFocusedWidth = focusSize;
             mFocusedHeight = focusSize;
         }
@@ -187,13 +191,14 @@ public class CropImageView extends AppCompatImageView {
         float[] mImageMatrixValues = new float[9];
         matrix.getValues(mImageMatrixValues); //获取缩放后的mImageMatrix的值
         float transX = mFocusMidPoint.x - (mImageMatrixValues[2] + mImageWidth * mImageMatrixValues[0] / 2);
-        float transY = mFocusMidPoint.y - (mImageMatrixValues[5] + mImageHeight * mImageMatrixValues[4] /2);
+        float transY = mFocusMidPoint.y - (mImageMatrixValues[5] + mImageHeight * mImageMatrixValues[4] / 2);
         matrix.postTranslate(transX,transY);
         setImageMatrix(matrix);
         invalidate();
     }
 
     @Override
+
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if(Style.RECTANGLE == mStyle){
@@ -219,6 +224,121 @@ public class CropImageView extends AppCompatImageView {
         canvas.drawPath(mFocusedPath, mBorderPaint);
         mFocusedPath.reset();
     }
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if(mSaving || null == getDrawable()){
+            return super.onTouchEvent(event);
+        }
+        switch (event.getAction() & MotionEvent.ACTION_MASK){
+            case MotionEvent.ACTION_DOWN: // 第一个点按下
+                savedMatrix.set(matrix);  // 以后每次变换的时候，以现在的状态为基础进行变换
+                pA.set(event.getX(), event.getY());
+                pB.set(event.getX(), event.getY());
+                mode = DRAG;
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                if(event.getActionIndex() > 1){
+                    pA.set(event.getX(0), event.getY(0));
+                    pB.set(event.getX(1), event.getY(1));
+                    midPoint.set((pA.x + pB.x) / 2, (pA.y + pB.y) / 2);
+                    oldDist = spacing(pA, pB);
+                    savedMatrix.set(matrix);  //以后每次需要变换的时候以现在的状态为基础进行变换
+                    if(oldDist > 10f) mode = ZOOM_OR_ROTATE; //两点之前的巨鹿大于10才有效
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if(mode == ZOOM_OR_ROTATE){
+                    PointF pC = new PointF(event.getX(1) - event.getY(0) + pA.x, event.getY(1) - event.getY(0) + pA.y);
+                    double a = spacing(pB.x, pB.y, pC.x, pC.y);
+                    double b = spacing(pA.x, pA.y, pC.x, pC.y);
+                    double c = spacing(pA.x, pA.y, pB.x, pB.y);
+                    if(a >= 10){
+                        double cosB = (a * a + c * c - b * b) / (2 * a * c);
+                        double angleB = Math.acos(cosB);
+                        double PID4 = Math.PI / 4;
+                        //旋转时， 默认角度 45 - 135 度之间
+                        if(angleB > PID4 && angleB < 3 * PID4) mode = ROTATE;
+                        else mode = ZOOM;
+                    }
+                }
+
+                if(mode == DRAG){
+                    matrix.set(savedMatrix);
+                    matrix.postTranslate(event.getX() - pA.x, event.getY() - pA.y);
+                    fixTranslation();
+                    setImageMatrix(matrix);
+                }else if(mode == ZOOM){
+                    float newDist = spacing(event.getX(0), event.getY(0), event.getX(1), event.getY(1));
+                    if(newDist > 10f){
+                        matrix.set(savedMatrix);
+                        //这里之所以用 maxPostScale 矫正一下，主要是防止缩放到最大时，继续缩放图片会产生位移
+                        float tScale = Math.min(newDist / oldDist, maxPostScale());
+                        if(tScale != 0){
+                            matrix.postScale(tScale, tScale, midPoint.x, midPoint.y);
+                            fixScale();
+                            fixTranslation();
+                            setImageMatrix(matrix);
+                        }
+                    }
+                }else if(mode == ROTATE){
+                    PointF pC = new PointF(event.getX(1) - event.getX(0) + pA.x, event.getY(1) - event.getY(1) + pA.y);
+                    double a = spacing(pB.x, pB.y, pC.x, pC.y);
+                    double b = spacing(pA.x, pA.y, pC.x, pC.y);
+                    double c = spacing(pA.x, pA.y, pB.x, pB.y);
+                    if(b > 10){
+                        double cosA = (b * b + c * c - a*a) / (2 * b * c);
+                        double angleA = Math.acos(cosA);
+                        double ta = pB.y - pA.y;
+                        double tb = pA.x - pB.x;
+                        double tc = pB.x * pA.y - pA.x * pB.y;
+                        double td = ta * pC.x + tb * pC.y + tc;
+                        if(td >  0){
+                            angleA = 2 * Math.PI - angleA;
+                        }
+                        rotation = angleA;
+                        matrix.set(savedMatrix);
+                        matrix.postRotate((float) (rotation * 180 / Math.PI), midPoint.x, midPoint.y);
+                        setImageMatrix(matrix);
+                    }
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+                if(mode == DRAG){
+                    if(spacing(pA, pB) < 50){
+                        long now = System.currentTimeMillis();
+                        if(now - doubleClickTime < 500 && spacing(pA, doubleClickPos) < 50){
+                            doubleClick(pA.x, pA.y);
+                            now = 0;
+                        }
+                        doubleClickPos.set(pA);
+                        doubleClickTime = now;
+                    }
+                }else if(mode == ROTATE){
+                    int rotateLevel = (int) Math.floor((rotation + Math.PI / 4) / (Math.PI / 2));
+                    if(rotateLevel == 4) rotateLevel = 0;
+                    matrix.set(savedMatrix);
+                    matrix.postRotate(90 * rotateLevel, midPoint.x, midPoint.y);
+                    if(rotateLevel == 1 || rotateLevel == 3){
+                        int tmp = mRotatedImageWidth;
+                        mRotatedImageWidth = mRotatedImageHeight;
+                        mRotatedImageHeight = tmp;
+                    }
+                    fixScale();
+                    fixTranslation();
+                    setImageMatrix(matrix);
+                    sumRotateLevel += rotateLevel;
+                }
+                mode = NONE;
+                break;
+        }
+        //解决部分机型无法拖动的问题
+        ViewCompat.postInvalidateOnAnimation(this);
+        return true;
+    }
+
     /**  计算边界缩放比例 isMinScale 是否最小缩放比例， true 最小缩比例  false 最大缩放比例 ***/
     private float getScale(int bitmapWidth, int bitmapHeight, int minWidth, int minHeight, boolean isMinScale){
         float scale;
@@ -385,7 +505,7 @@ public class CropImageView extends AppCompatImageView {
                    //如果时圆形，就将土拍你裁剪成圆的
                    int length = Math.min(expectWidth, expectHeight);
                    int radius  = length / 2;
-                   Bitmap circleBitmap = Bitmap.createBitmap(length,left,Bitmap.Config.ARGB_8888);
+                   Bitmap circleBitmap = Bitmap.createBitmap(length,length,Bitmap.Config.ARGB_8888);
                    Canvas canvas = new Canvas(circleBitmap);
                    BitmapShader bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
                    Paint paint = new Paint();
@@ -401,45 +521,147 @@ public class CropImageView extends AppCompatImageView {
     }
 
 
-    public void saveCropViewToBitmap(){
-        Bitmap bitmap = Bitmap.createBitmap( ((BitmapDrawable) getDrawable()).getBitmap(),(int)mFocusedRect.left,(int)mFocusedRect.top,mFocusedWidth,mFocusedHeight);
-        int length = Math.min(mFocusedHeight, mFocusedWidth);
-        int radius = length / 2;
-        Bitmap circleBitmap = Bitmap.createBitmap(length,length, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(circleBitmap);
-        Paint paint = new Paint();
-        BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-        paint.setShader(shader);
-        canvas.drawCircle(mFocusedWidth / 2,mFocusedHeight / 2,radius,paint);
-        saveBitmapToFile(circleBitmap);
-    }
 
-
+    /**
+     *
+     * @param folder          希望保存的文件夹
+     * @param expectedWidth     希望保存的图片宽度
+     * @param expectedHeight    希望保存的图片高度
+     * @param isSaveRectangle 是否希望按矩形区域保存图片
+     */
     public void saveBitmapToFile(File folder,int expectedWidth,int expectedHeight,boolean isSaveRectangle){
-
+        if(mSaving) return ;
+        mSaving = true;
+        final Bitmap croppedImage = getCropBitmap(expectedWidth,expectedHeight,isSaveRectangle);
+        Bitmap.CompressFormat outputFormat = Bitmap.CompressFormat.JPEG;
+        File saveFile = createFile(folder, "IMG_", ".jpg");
+        if(mStyle == Style.CIRCLE && !isSaveRectangle){
+            outputFormat = Bitmap.CompressFormat.PNG;
+            saveFile = createFile(folder, "IMG_", ".png");
+        }
+        final Bitmap.CompressFormat finalOutputFormat = outputFormat;
+        final File finalSaveFile = saveFile;
+        new Thread(){
+            @Override
+            public void run() {
+                saveOutput(croppedImage, finalOutputFormat, finalSaveFile);
+            }
+        }.start();
     }
 
+    /** 根据系统时间、前缀、后缀产生一个文件**/
+    private File createFile(File folder, String prefix, String ssuffix){
+        if(!folder.exists() || !folder.isDirectory()) folder.mkdirs();
+        try{
+            File nomedia = new File(folder, ".nomedia"); //在当前文件夹底下创建一个 .nomedia文件
+            if(!nomedia.exists()) nomedia.createNewFile();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA);
+        String filename = prefix + dateFormat.format(new Date(System.currentTimeMillis()) + ssuffix);
+        return new File(folder, filename);
+    }
+
+    /**将图片保存在本地***/
     @SuppressLint("WrongThread")
-    private void saveBitmapToFile(Bitmap bitmap){
-        File root = Environment.getExternalStorageDirectory();
-        File storeFile = new File(root,"test2.png");
-        if(storeFile.exists()){
-            storeFile.delete();
+    private void saveOutput(Bitmap croppedImage, Bitmap.CompressFormat outputFormat, File saveFile){
+        OutputStream outputStream = null;
+        try{
+            outputStream = getContext().getContentResolver().openOutputStream(Uri.fromFile(saveFile));
+            if(outputStream != null) croppedImage.compress(outputFormat, 90, outputStream);
+            Message.obtain(mHandler, SAVE_SUCCESS, saveFile).sendToTarget();
+        }catch (IOException e){
+            e.printStackTrace();
+            Message.obtain(mHandler, SAVE_ERROR, saveFile).sendToTarget();
+        }finally {
+            if(outputStream != null){
+                try{
+                    outputStream.close();
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
+            }
         }
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(storeFile);
-            bitmap.compress(Bitmap.CompressFormat.PNG,90,fos);
-            fos.flush();
-            fos.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        mSaving = false;
+        croppedImage.recycle();
+    }
+
+    private static class InnerHandler extends Handler {
+        public InnerHandler() {super(Looper.getMainLooper());}
+
+        @Override
+        public void handleMessage(Message msg) {
+            File saveFile = (File) msg.obj;
+            switch (msg.what){
+                case SAVE_SUCCESS:
+                    if(mListener != null) mListener.onBitmapSaveSucess(saveFile);
+                    break;
+                case SAVE_ERROR:
+                    if(mListener != null) mListener.onBitmapSaveError(saveFile);
+                    break;
+            }
         }
     }
 
-    public String getCropImagePath(){
-        return Environment.getExternalStorageDirectory() + File.separator + "test2.png";
+    private static OnBitmapSaveCompleteListener mListener;
+
+    public interface OnBitmapSaveCompleteListener{
+        void onBitmapSaveSucess(File file);
+        void onBitmapSaveError(File file);
     }
+
+    public void setOnBitmapSaveCompleteListener(OnBitmapSaveCompleteListener listener){
+        mListener = listener;
+    }
+
+
+    public int getmMaskColor() {
+        return mMaskColor;
+    }
+
+    public void setmMaskColor(int mMaskColor) {
+        this.mMaskColor = mMaskColor;
+        init();
+    }
+
+    public int getmFocusedWidth() {
+        return mFocusedWidth;
+    }
+
+    public void setmFocusedWidth(int mFocusedWidth) {
+        this.mFocusedWidth = mFocusedWidth;
+        init();
+    }
+
+    public int getmFocusedHeight() {
+        return mFocusedHeight;
+    }
+
+    public void setmFocusedHeight(int mFocusedHeight) {
+        this.mFocusedHeight = mFocusedHeight;
+        init();
+    }
+
+    public int getmBorderWidth() {
+        return mBorderWidth;
+    }
+
+    public void setmBorderWidth(int mBorderWidth) {
+        this.mBorderWidth = mBorderWidth;
+        init();
+    }
+
+    public Style getmStyle() {
+        return mStyle;
+    }
+
+    public void setmStyle(Style mStyle) {
+        this.mStyle = mStyle;
+        init();
+    }
+
+
+
+
 }
