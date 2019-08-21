@@ -58,9 +58,9 @@ public class CropActivity extends AppCompatActivity implements View.OnClickListe
         send_tv.setOnClickListener(this);
         send_tv.setEnabled(true);
         mCropImage.setOnBitmapSaveCompleteListener(this);
-/*        mCropImage.setmFocusedWidth(mModel.getmFocusWidth());
+        mCropImage.setmFocusedWidth(mModel.getmFocusWidth());
         mCropImage.setmFocusedHeight(mModel.getmFocusHeight());
-        mCropImage.setmStyle(mModel.getmStyle());*/
+        mCropImage.setmStyle(mModel.getmStyle());
         //缩放图片
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;

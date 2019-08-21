@@ -15,6 +15,7 @@ import android.widget.ImageView;
 import com.bumptech.glide.Glide;
 import com.example.yishe.oreaimagepicker.adapter.SelectedImageAdapter;
 import com.example.yishe.oreaimagepicker.entity.ImageItem;
+import com.example.yishe.oreaimagepicker.widget.CropImageView;
 
 import java.util.ArrayList;
 
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
                        /* .setMultiMode(true)
                         .setPreview(true)*/
                        .setMultiMode(false)
+                        .setmStyle(CropImageView.Style.CIRCLE)
+                        .setmIsSaveRectangle(false)
                         .setCrop(true)
                         .forResult(REQUEST_CODE_ALBNUM);
             }

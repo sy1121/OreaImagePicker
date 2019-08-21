@@ -5,6 +5,9 @@ import android.content.Intent;
 
 import com.example.yishe.oreaimagepicker.model.ImagePickModel;
 import com.example.yishe.oreaimagepicker.ui.GridActivity;
+import com.example.yishe.oreaimagepicker.widget.CropImageView;
+
+import java.io.File;
 
 /**
  * @author yishe
@@ -43,6 +46,41 @@ public class SelectionCreator {
 
     public SelectionCreator setShowCamera(boolean showCamera){
         mModel.setShowCamera(showCamera);
+        return this;
+    }
+
+    public SelectionCreator setmCropCacheFolder(File mCropCacheFolder) {
+        mModel.setmCropCacheFolder(mCropCacheFolder);
+        return this;
+    }
+
+    public SelectionCreator setmOutputX(int mOutputX) {
+        mModel.setmOutputX(mOutputX);
+        return this;
+    }
+
+    public SelectionCreator setmOutPutY(int mOutPutY) {
+        mModel.setmOutPutY(mOutPutY);
+        return this;
+    }
+
+    public SelectionCreator setmFocusWidth(int mFocusWidth) {
+        mModel.setmFocusWidth(mFocusWidth);
+        return this;
+    }
+
+    public SelectionCreator setmFocusHeight(int mFocusHeight) {
+        mModel.setmFocusHeight(mFocusHeight);
+        return this;
+    }
+
+    public SelectionCreator setmIsSaveRectangle(boolean mIsSaveRectangle) {
+        mModel.setmIsSaveRectangle(mIsSaveRectangle);
+        return this;
+    }
+
+    public SelectionCreator setmStyle(CropImageView.Style mStyle) {
+        mModel.setmStyle(mStyle);
         return this;
     }
 

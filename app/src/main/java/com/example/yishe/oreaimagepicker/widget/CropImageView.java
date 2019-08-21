@@ -51,8 +51,8 @@ public class CropImageView extends AppCompatImageView {
 
     private int mMaskColor = 0xAF000000; //暗色
     private int mBorderColor = 0xAA808080;//焦点边框颜色
-    private int mFocusedWidth = 200;//焦点框的宽度
-    private int mFocusedHeight = 200; //焦点框的高度
+    private int mFocusedWidth = 300;//焦点框的宽度
+    private int mFocusedHeight = 300; //焦点框的高度
     private int mBorderWidth = 1;         //焦点边框的宽度（画笔宽度）
     private int mDefaultStyleIndex = 0;   // 默认焦点框的形状
 
@@ -559,7 +559,7 @@ public class CropImageView extends AppCompatImageView {
             e.printStackTrace();
         }
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA);
-        String filename = prefix + dateFormat.format(new Date(System.currentTimeMillis()) + ssuffix);
+        String filename = prefix + dateFormat.format(new Date(System.currentTimeMillis())) + ssuffix;
         return new File(folder, filename);
     }
 
