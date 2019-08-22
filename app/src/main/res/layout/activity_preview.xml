@@ -64,6 +64,7 @@
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
                 android:layout_marginRight="15dp"
+                android:paddingTop="10dp"
                 android:text="选择"/>
             <ImageView
                 android:id="@+id/choose_check"
@@ -71,7 +72,8 @@
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:layout_toLeftOf="@id/choose_text"
-                android:layout_marginRight="5dp"
+                android:paddingRight="10dp"
+                android:paddingTop="10dp"
                 android:src="@mipmap/checkbox_normal"/>
         </RelativeLayout>
     </RelativeLayout>

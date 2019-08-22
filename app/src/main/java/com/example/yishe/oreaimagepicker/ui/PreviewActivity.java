@@ -11,6 +11,7 @@ import android.view.Window;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.yishe.oreaimagepicker.R;
 import com.example.yishe.oreaimagepicker.adapter.HorizontalListAdapter;
@@ -209,7 +210,12 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
             case R.id.edit_btn:
                 break;
             case R.id.choose_check:
-                ImagePickModel.getInstance().notifyCheckChanged(mCurAlbumPicSet.get(mShowIndex),!ImagePickModel.getInstance().getSelectedImages().contains(mCurAlbumPicSet.get(mShowIndex)));
+                boolean isChecked = ImagePickModel.getInstance().getSelectedImages().contains(mCurAlbumPicSet.get(mShowIndex));
+                if(!isChecked && mImagePickModel.hasReceivedMaxCount()){
+                    Toast.makeText(this,"最多选中"+ ImagePickModel.getInstance().getSelectLimit() +"张图片",Toast.LENGTH_SHORT).show();
+                    return ;
+                }
+                ImagePickModel.getInstance().notifyCheckChanged(mCurAlbumPicSet.get(mShowIndex),!isChecked);
                 break;
 
         }

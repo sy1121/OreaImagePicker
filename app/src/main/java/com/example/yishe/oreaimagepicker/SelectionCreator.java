@@ -3,6 +3,7 @@ package com.example.yishe.oreaimagepicker;
 import android.app.Activity;
 import android.content.Intent;
 
+import com.example.yishe.oreaimagepicker.loader.ImageLoader;
 import com.example.yishe.oreaimagepicker.model.ImagePickModel;
 import com.example.yishe.oreaimagepicker.ui.GridActivity;
 import com.example.yishe.oreaimagepicker.widget.CropImageView;
@@ -81,6 +82,11 @@ public class SelectionCreator {
 
     public SelectionCreator setmStyle(CropImageView.Style mStyle) {
         mModel.setmStyle(mStyle);
+        return this;
+    }
+
+    public SelectionCreator setImageLoader(ImageLoader imageLoader){
+        mModel.setmImageLoader(imageLoader);
         return this;
     }
 

@@ -8,6 +8,7 @@
     <color name="color_white">#FFFFFF</color>
     <color name="color_green">#00FF00</color>
     <color name="color_mogreen">#008B45</color>
+    <color name="color_blue">#0000ff</color>
     <color name="color_grey">#5A5A5A</color>
     <color name="color_dark">#333333</color>
     <color name="color_white_mask">#A0ffffff</color>

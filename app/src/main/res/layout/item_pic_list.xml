@@ -23,8 +23,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignParentRight="true"
-        android:layout_marginTop="10dp"
-        android:layout_marginRight="10dp"
+        android:paddingTop="10dp"
+        android:paddingRight="10dp"
         android:scaleType="centerInside"
         android:src="@mipmap/checkbox_normal"/>
 </RelativeLayout>

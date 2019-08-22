@@ -14,6 +14,10 @@
     <string name="preview_enable">预览(%s)</string>
     <string name="crop">裁剪</string>
 
+    <string name="rectangle">矩形</string>
+    <string name="circle">圆形</string>
+
+
     <item name="tag_first" type="id"></item>
     <item name="tag_second" type="id"></item>
 

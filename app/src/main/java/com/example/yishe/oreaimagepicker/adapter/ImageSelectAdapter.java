@@ -133,8 +133,6 @@ public class ImageSelectAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         void bind(final int position){
             ImageItem item = getItem(position);
             final int pos = ImagePickModel.getInstance().isShowCamera() ? position - 1 : position;
-            //Log.i(TAG,item.getUrl());
-            //PicassoWrapper.getInstance().build(mContext).load(Uri.parse("file://"+item.getUrl())).fit().centerCrop().placeholder(PluginResUtil.getInstance().getPluginDrawable(R.color.color_pic_back))/*.compressImage(true)*/.into(pic);
             Glide.with(mContext).load(item.path).centerCrop().placeholder(mContext.getDrawable(R.color.color_pic_back)).into(pic);
             if(ImagePickModel.getInstance().isMultiMode()) {
                 if (mModel.getSelectedImages().contains(item)) {
@@ -162,7 +160,7 @@ public class ImageSelectAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                             isChecked = false;
                         }else{
                             if(mModel.hasReceivedMaxCount()){
-                                Toast.makeText(mContext,"最多选中9张图片",Toast.LENGTH_SHORT).show();
+                                Toast.makeText(mContext,"最多选中"+ ImagePickModel.getInstance().getSelectLimit() +"张图片",Toast.LENGTH_SHORT).show();
                                 return ;
                             }
                             ((ImageView)v).setImageResource(R.mipmap.checkbox_checked);

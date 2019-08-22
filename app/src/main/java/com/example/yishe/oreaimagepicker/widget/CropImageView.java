@@ -22,6 +22,7 @@ import android.os.Message;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 
@@ -106,7 +107,6 @@ public class CropImageView extends AppCompatImageView {
         mFocusedWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mFocusedWidth, getResources().getDisplayMetrics());
         mFocusedHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mFocusedHeight, getResources().getDisplayMetrics());
         mBorderWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mBorderWidth, getResources().getDisplayMetrics());
-
         TypedArray a = context.obtainStyledAttributes(attrs,R.styleable.CropImageView);
         mMaskColor = a.getColor(R.styleable.CropImageView_cropMaskColor,mMaskColor);
         mBorderColor = a.getColor(R.styleable.CropImageView_cropBorderColor,mBorderColor);
@@ -116,7 +116,6 @@ public class CropImageView extends AppCompatImageView {
         mDefaultStyleIndex = a.getInteger(R.styleable.CropImageView_cropStyle,mDefaultStyleIndex);
         mStyle = styles[mDefaultStyleIndex];
         a.recycle();
-
         //只允许图片为当前的缩放模式
         setScaleType(ScaleType.MATRIX);
     }
@@ -239,7 +238,8 @@ public class CropImageView extends AppCompatImageView {
                 mode = DRAG;
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
-                if(event.getActionIndex() > 1){
+                Log.i(TAG, "ACTION_POINTER_DOWN");
+                if(event.getPointerCount() > 1){
                     pA.set(event.getX(0), event.getY(0));
                     pB.set(event.getX(1), event.getY(1));
                     midPoint.set((pA.x + pB.x) / 2, (pA.y + pB.y) / 2);
@@ -249,8 +249,9 @@ public class CropImageView extends AppCompatImageView {
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
+                Log.i(TAG, "ACTION_MOVE");
                 if(mode == ZOOM_OR_ROTATE){
-                    PointF pC = new PointF(event.getX(1) - event.getY(0) + pA.x, event.getY(1) - event.getY(0) + pA.y);
+                    PointF pC = new PointF(event.getX(1) - event.getX(0) + pA.x, event.getY(1) - event.getY(0) + pA.y);
                     double a = spacing(pB.x, pB.y, pC.x, pC.y);
                     double b = spacing(pA.x, pA.y, pC.x, pC.y);
                     double c = spacing(pA.x, pA.y, pB.x, pB.y);
@@ -265,11 +266,13 @@ public class CropImageView extends AppCompatImageView {
                 }
 
                 if(mode == DRAG){
+                    Log.i(TAG, "DRAG");
                     matrix.set(savedMatrix);
                     matrix.postTranslate(event.getX() - pA.x, event.getY() - pA.y);
                     fixTranslation();
                     setImageMatrix(matrix);
                 }else if(mode == ZOOM){
+                    Log.i(TAG, "ZOOM");
                     float newDist = spacing(event.getX(0), event.getY(0), event.getX(1), event.getY(1));
                     if(newDist > 10f){
                         matrix.set(savedMatrix);
@@ -283,7 +286,8 @@ public class CropImageView extends AppCompatImageView {
                         }
                     }
                 }else if(mode == ROTATE){
-                    PointF pC = new PointF(event.getX(1) - event.getX(0) + pA.x, event.getY(1) - event.getY(1) + pA.y);
+                    Log.i(TAG, "ROTATE");
+                    PointF pC = new PointF(event.getX(1) - event.getX(0) + pA.x, event.getY(1) - event.getY(0) + pA.y);
                     double a = spacing(pB.x, pB.y, pC.x, pC.y);
                     double b = spacing(pA.x, pA.y, pC.x, pC.y);
                     double c = spacing(pA.x, pA.y, pB.x, pB.y);
@@ -364,7 +368,7 @@ public class CropImageView extends AppCompatImageView {
         if(currentScale < minScale){
             float scale = minScale / currentScale;
             matrix.postScale(scale, scale);
-        }else{
+        }else if(currentScale > mMaxScale){
             float scale = mMaxScale / currentScale;
             matrix.postScale(scale, scale);
         }
@@ -392,7 +396,7 @@ public class CropImageView extends AppCompatImageView {
     private float maxPostScale(){
         float imageMatixValues[] = new float[9];
         matrix.getValues(imageMatixValues);
-        float curScale = Math.abs(imageMatixValues[0] + Math.abs(imageMatixValues[1]));
+        float curScale = Math.abs(imageMatixValues[0]) + Math.abs(imageMatixValues[1]);
         return mMaxScale / curScale;
     }
 
@@ -502,16 +506,16 @@ public class CropImageView extends AppCompatImageView {
             if(expectWidth != width || expectHeight != height){
                 bitmap = Bitmap.createScaledBitmap(bitmap, expectWidth, expectHeight, true);
                 if(mStyle == Style.CIRCLE && !isSaveRectangle){
-                   //如果时圆形，就将土拍你裁剪成圆的
-                   int length = Math.min(expectWidth, expectHeight);
-                   int radius  = length / 2;
-                   Bitmap circleBitmap = Bitmap.createBitmap(length,length,Bitmap.Config.ARGB_8888);
-                   Canvas canvas = new Canvas(circleBitmap);
-                   BitmapShader bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-                   Paint paint = new Paint();
-                   paint.setShader(bitmapShader);
-                   canvas.drawCircle(expectWidth / 2f, expectHeight / 2f, radius, paint);
-                   bitmap = circleBitmap;
+                    //如果时圆形，就将土拍你裁剪成圆的
+                    int length = Math.min(expectWidth, expectHeight);
+                    int radius  = length / 2;
+                    Bitmap circleBitmap = Bitmap.createBitmap(length,length,Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(circleBitmap);
+                    BitmapShader bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                    Paint paint = new Paint();
+                    paint.setShader(bitmapShader);
+                    canvas.drawCircle(expectWidth / 2f, expectHeight / 2f, radius, paint);
+                    bitmap = circleBitmap;
                 }
             }
         }catch(OutOfMemoryError e){
@@ -630,7 +634,7 @@ public class CropImageView extends AppCompatImageView {
     }
 
     public void setmFocusedWidth(int mFocusedWidth) {
-        this.mFocusedWidth = mFocusedWidth;
+        this.mFocusedWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mFocusedWidth, getResources().getDisplayMetrics());
         init();
     }
 
@@ -639,7 +643,7 @@ public class CropImageView extends AppCompatImageView {
     }
 
     public void setmFocusedHeight(int mFocusedHeight) {
-        this.mFocusedHeight = mFocusedHeight;
+        this.mFocusedHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mFocusedHeight, getResources().getDisplayMetrics());
         init();
     }
 
@@ -648,7 +652,7 @@ public class CropImageView extends AppCompatImageView {
     }
 
     public void setmBorderWidth(int mBorderWidth) {
-        this.mBorderWidth = mBorderWidth;
+        this.mBorderWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mBorderWidth, getResources().getDisplayMetrics());
         init();
     }
 

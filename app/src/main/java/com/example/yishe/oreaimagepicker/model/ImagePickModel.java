@@ -18,6 +18,7 @@ import com.example.yishe.oreaimagepicker.data.ImageDataSource;
 import com.example.yishe.oreaimagepicker.entity.Album;
 import com.example.yishe.oreaimagepicker.entity.ImageItem;
 import com.example.yishe.oreaimagepicker.listener.OnCheckChangeListener;
+import com.example.yishe.oreaimagepicker.loader.ImageLoader;
 import com.example.yishe.oreaimagepicker.util.Utils;
 import com.example.yishe.oreaimagepicker.widget.CropImageView;
 
@@ -35,7 +36,9 @@ public class ImagePickModel {
     private int mCurSelectedAlbumIndex;
     private ArrayList<ImageItem> mSelectedImages;
     private List<OnCheckChangeListener> mCheckChangeListeners;
+    private ImageLoader mImageLoader;
     private static volatile ImagePickModel mInstance;
+
 
     private File mTakeImageFile;
     private File mCropCacheFolder; //裁剪图片路径
@@ -204,7 +207,7 @@ public class ImagePickModel {
     }
 
     public boolean hasReceivedMaxCount(){
-        return getSelectedImages().size() >= 9;
+        return getSelectedImages().size() >= mSelectLimit;
     }
 
 
@@ -326,6 +329,14 @@ public class ImagePickModel {
 
     public void setmStyle(CropImageView.Style mStyle) {
         this.mStyle = mStyle;
+    }
+
+    public ImageLoader getmImageLoader() {
+        return mImageLoader;
+    }
+
+    public void setmImageLoader(ImageLoader mImageLoader) {
+        this.mImageLoader = mImageLoader;
     }
 
 
