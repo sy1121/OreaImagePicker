@@ -48,7 +48,6 @@ public class CropActivity extends AppCompatActivity implements View.OnClickListe
         mModel = ImagePickModel.getInstance();
         mSelctedImage = getIntent().getParcelableExtra("crop_image");
         initView();
-       // Glide.with(this).load(mSelectedImage.path).placeholder(getResources().getDrawable(R.color.c_white)).into(mCropImage);
     }
 
     private void initView(){
@@ -70,6 +69,8 @@ public class CropActivity extends AppCompatActivity implements View.OnClickListe
         options.inJustDecodeBounds = false;
         mBitmap = BitmapFactory.decodeFile(mSelctedImage.path, options);
         mCropImage.setImageBitmap(mBitmap);
+
+
 
     }
 

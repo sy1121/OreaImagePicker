@@ -1,13 +1,13 @@
 package com.example.yishe.oreaimagepicker.ui;
 
-import android.app.Activity;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
-import android.view.Window;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -19,13 +19,14 @@ import com.example.yishe.oreaimagepicker.adapter.ImagePreviewAdapter;
 import com.example.yishe.oreaimagepicker.entity.ImageItem;
 import com.example.yishe.oreaimagepicker.listener.OnCheckChangeListener;
 import com.example.yishe.oreaimagepicker.model.ImagePickModel;
+import com.example.yishe.oreaimagepicker.util.Utils;
 
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class PreviewActivity extends AppCompatActivity implements View.OnClickListener, OnCheckChangeListener {
+public class PreviewActivity extends BaseActivity implements View.OnClickListener, OnCheckChangeListener {
     private static final String TAG = "PreviewActivity";
 
     @BindView(R.id.back_icon)
@@ -64,7 +65,7 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
+       // supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_preview);
         ButterKnife.bind(this);
         mImagePickModel = ImagePickModel.getInstance();
@@ -87,6 +88,14 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
         send_tv.setOnClickListener(this);
         mChooseCheck.setOnClickListener(this);
         mEditBtn.setOnClickListener(this);
+
+
+        //因为状态栏透明后，布局整体会上移，所以给头部加上状态栏的margin值，保证头部不会被覆盖
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mHeader.getLayoutParams();
+            params.topMargin = Utils.getStatusHeight(this);
+            mHeader.setLayoutParams(params);
+        }
     }
 
     private void initData(){
@@ -152,13 +161,7 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
         mPreviewAdapter.setOnImageClickListener(new ImagePreviewAdapter.OnImageClickListener() {
             @Override
             public void onClick() {
-                if(mHeader.getVisibility()==View.VISIBLE){
-                    mHeader.setVisibility(View.GONE);
-                    mFooter.setVisibility(View.GONE);
-                }else{
-                    mHeader.setVisibility(View.VISIBLE);
-                    mFooter.setVisibility(View.VISIBLE);
-                }
+                onImageTip();
             }
         });
         mViewPager.setAdapter(mPreviewAdapter);
@@ -204,7 +207,7 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
                 finish();
                 break;
             case R.id.send_text:
-                setResult(Activity.RESULT_OK);
+                setResult(android.app.Activity.RESULT_OK);
                 finish();
                 break;
             case R.id.edit_btn:
@@ -236,6 +239,23 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
         if(mSelectedAlbumIndex == -1){
             mPreviewAdapter.notifyDataSetChanged();
             refreshTitle();
+        }
+    }
+
+
+    private void onImageTip(){
+        if(mHeader.getVisibility()==View.VISIBLE){
+            mHeader.setAnimation(AnimationUtils.loadAnimation(this, R.anim.top_out));
+            mFooter.setAnimation(AnimationUtils.loadAnimation(this, R.anim.bottom_out));
+            tintManager.setStatusBarTintResource(Color.TRANSPARENT);
+            mHeader.setVisibility(View.GONE);
+            mFooter.setVisibility(View.GONE);
+        }else{
+            mHeader.setAnimation(AnimationUtils.loadAnimation(this, R.anim.top_in));
+            mFooter.setAnimation(AnimationUtils.loadAnimation(this, R.anim.bottom_in));
+            tintManager.setStatusBarTintResource(R.color.ip_color_primary);
+            mHeader.setVisibility(View.VISIBLE);
+            mFooter.setVisibility(View.VISIBLE);
         }
     }
 }
