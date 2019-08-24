@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">OreaImagePicker</string>
+
+    <string name="order_for_car">预约接送</string>
+    <string name="order_list">订单中心</string>
+    <string name="exceed_9_photo">最多选中9张图片</string>
+    <string name="all_pic">所有图片</string>
+    <string name="no_camera_permission">没有相机去权限</string>
+    <string name="title_album">相册</string>
+
+    <string name="send_disable">完成</string>
+    <string name="send_enable">完成(%s/%s)</string>
+    <string name="preview_disable">预览</string>
+    <string name="preview_enable">预览(%s)</string>
+    <string name="crop">裁剪</string>
+
+    <string name="rectangle">矩形</string>
+    <string name="circle">圆形</string>
+
+
+    <item name="tag_first" type="id"></item>
+    <item name="tag_second" type="id"></item>
+
+    <item name="tag_image_url" type="id"></item>
+    <item name="tag_image_width" type="id"></item>
+    <item name="tag_image_height" type="id"></item>
+</resources>
